@@ -1,33 +1,25 @@
+# Frontend
 node_modules
-
-# Output
 frontend/.output
 frontend/.vercel
 frontend/.netlify
 frontend/.wrangler
 frontend/.svelte-kit
 frontend/build
-
-# OS
 frontend/.DS_Store
 frontend/Thumbs.db
-
-# Env
 frontend/.env
 frontend/.env.*
 !.env.example
 !.env.test
-backend/.env
-backend/.env.*
-
-# Vite
 frontend/vite.config.js.timestamp-*
 frontend/vite.config.ts.timestamp-*
 
-# .vscode Stuff
-.vscode/mcp.json
-backend/.vscode/copilot_instructions.md
+# Backend
+backend/.env
+backend/.env.*
 
-
-/backend/.vscode/*
-/frontend/.vscode/*
+# Editor
+.vscode/
+.DS_Store
+Thumbs.db   
