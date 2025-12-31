@@ -1,0 +1,8 @@
+{
+  "name": "backend",
+  "scripts": {
+    "build": "go build -o backend main.go",
+    "dev": "go run main.go",
+    "test": "go test ./..."
+  }
+}
