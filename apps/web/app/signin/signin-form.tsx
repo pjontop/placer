@@ -51,18 +51,19 @@ export default function SignInForm() {
       </div>
 
       <div className="mb-4">
-        <Label className="mb-2 text-sm text-[var(--color-foreground)]">Email address</Label>
-        <Input type="email" placeholder="Your Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <Label htmlFor="signin-email" className="mb-2 text-sm text-[var(--color-foreground)]">Email address</Label>
+        <Input id="signin-email" type="email" placeholder="Your Email" value={email} onChange={(e) => setEmail(e.target.value)} />
       </div>
 
       <div className="mb-2 flex items-center justify-between">
-        <Label className="text-sm text-[var(--color-foreground)]">Password</Label>
+        <Label htmlFor="signin-password" className="text-sm text-[var(--color-foreground)]">Password</Label>
         <Link href="#" className="text-sm underline text-[var(--color-muted-foreground)]">Forgot Password ?</Link>
       </div>
 
       <div className="mb-2">
         <div className="relative">
           <Input
+            id="signin-password"
             type={showPassword ? "text" : "password"}
             placeholder="A minimum of 8 Characters"
             className="pr-10"
@@ -87,8 +88,8 @@ export default function SignInForm() {
       </div>
 
       <div className="flex items-center gap-2 mt-4">
-        <Checkbox checked={agree} onCheckedChange={(v) => setAgree(Boolean(v))} />
-        <Label className="text-sm text-[var(--color-muted-foreground)]">I agree to the <a href="#" className="underline">Terms & Conditions</a></Label>
+        <Checkbox id="signin-agree" checked={agree} onCheckedChange={(v) => setAgree(Boolean(v))} />
+        <Label htmlFor="signin-agree" className="text-sm text-[var(--color-muted-foreground)]">I agree to the <a href="#" className="underline">Terms & Conditions</a></Label>
       </div>
 
       {error && <div className="text-sm text-destructive mt-3">{error}</div>}
