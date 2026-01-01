@@ -173,3 +173,8 @@ func (s *AuthService) RefreshAccessToken(refreshTokenString string) (string, err
 	}
 	return accessToken, nil
 }
+
+// RevokeRefreshToken revokes a refresh token string
+func (s *AuthService) RevokeRefreshToken(refreshTokenString string) error {
+	return s.refreshTokenRepo.RevokeRefreshToken(refreshTokenString)
+}

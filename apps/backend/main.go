@@ -23,7 +23,7 @@ func loadEnv() {
 	}
 
 	// Check required variables
-	requiredVars := []string{"DATABASE_URL", "JWT_SECRET"}
+	requiredVars := []string{"DATABASE_URL", "JWT_SECRET", "FRONTEND_URL"}
 	for _, v := range requiredVars {
 		if os.Getenv(v) == "" {
 			log.Fatalf("Required environment variable %s is not set", v)
@@ -43,6 +43,10 @@ func main() {
 
 	r := mux.NewRouter()
 
+	// Register CORS middleware using configured frontend origin
+	frontendURL := os.Getenv("FRONTEND_URL")
+	r.Use(middleware.CORSMiddleware(frontendURL))
+
 	// Create repositories
 	userRepo := models.NewUserRepository(database)
 	refreshTokenRepo := models.NewRefreshTokenRepository(database)
@@ -58,6 +62,7 @@ func main() {
 	r.HandleFunc("/api/auth/register", authHandler.Register).Methods("POST")
 	r.HandleFunc("/api/auth/login", authHandler.Login).Methods("POST")
 	r.HandleFunc("/api/auth/refresh", authHandler.RefreshToken).Methods("POST")
+	r.HandleFunc("/api/auth/logout", authHandler.Logout).Methods("POST")
 
 	// Protected routes
 	protected := r.PathPrefix("/api").Subrouter()

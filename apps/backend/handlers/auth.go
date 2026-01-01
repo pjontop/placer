@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/pjontop/placer/backend/auth"
 )
@@ -87,8 +89,20 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
-	// Attempt to login
-	token, err := h.authService.Login(req.Email, req.Password)
+
+	// Get refresh TTL from env or default to 7 days
+	refreshTTLStr := os.Getenv("REFRESH_TOKEN_EXPIRES_IN")
+	if refreshTTLStr == "" {
+		refreshTTLStr = "168h"
+	}
+	refreshTTL, err := time.ParseDuration(refreshTTLStr)
+	if err != nil {
+		http.Error(w, "Invalid refresh token TTL configuration", http.StatusInternalServerError)
+		return
+	}
+
+	// Attempt to login and create refresh token
+	accessToken, refreshToken, err := h.authService.LoginWithRefresh(req.Email, req.Password, refreshTTL)
 	if err != nil {
 		if errors.Is(err, auth.ErrInvalidCredentials) {
 			http.Error(w, "Invalid credentials", http.StatusUnauthorized)
@@ -97,18 +111,41 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	// Return the token
-	response := LoginResponse{Token: token}
+
+	// Cookie settings from env
+	cookieSecure := true
+	if os.Getenv("COOKIE_SECURE") == "false" {
+		cookieSecure = false
+	}
+	cookieSameSite := http.SameSiteNoneMode
+	switch os.Getenv("COOKIE_SAMESITE") {
+	case "Lax":
+		cookieSameSite = http.SameSiteLaxMode
+	case "Strict":
+		cookieSameSite = http.SameSiteStrictMode
+	}
+
+	cookie := &http.Cookie{
+		Name:     "refresh_token",
+		Value:    refreshToken,
+		HttpOnly: true,
+		Secure:   cookieSecure,
+		SameSite: cookieSameSite,
+		Path:     "/",
+		Expires:  time.Now().Add(refreshTTL),
+	}
+	if domain := os.Getenv("COOKIE_DOMAIN"); domain != "" {
+		cookie.Domain = domain
+	}
+
+	http.SetCookie(w, cookie)
+
+	// Return access token in response body
+	response := LoginResponse{Token: accessToken}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
 
-// handlers/auth.go (existing methods)
-
-// RefreshRequest represents the refresh token payload
-type RefreshRequest struct {
-	RefreshToken string `json:"refresh_token"`
-}
 
 // RefreshResponse contains the new access token
 type RefreshResponse struct {
@@ -117,15 +154,15 @@ type RefreshResponse struct {
 
 // RefreshToken handles access token refresh
 func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
-	// Parse the request body
-	var req RefreshRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+	// Read refresh token from cookie
+	cookie, err := r.Cookie("refresh_token")
+	if err != nil {
+		http.Error(w, "Refresh token required", http.StatusUnauthorized)
 		return
 	}
 
-	// Attempt to refresh the token
-	token, err := h.authService.RefreshAccessToken(req.RefreshToken)
+	// Attempt to refresh the token using the cookie
+	token, err := h.authService.RefreshAccessToken(cookie.Value)
 	if err != nil {
 		if errors.Is(err, auth.ErrInvalidToken) || errors.Is(err, auth.ErrExpiredToken) {
 			http.Error(w, "Invalid or expired refresh token", http.StatusUnauthorized)
@@ -139,4 +176,29 @@ func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	response := RefreshResponse{Token: token}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+// Logout handles sign out by revoking the refresh token and clearing the cookie
+func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("refresh_token")
+	if err == nil {
+		// best-effort revoke
+		_ = h.authService.RevokeRefreshToken(cookie.Value)
+	}
+
+	clear := &http.Cookie{
+		Name:     "refresh_token",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   os.Getenv("COOKIE_SECURE") != "false",
+		Expires:  time.Unix(0, 0),
+		MaxAge:   -1,
+		SameSite: http.SameSiteNoneMode,
+	}
+	if domain := os.Getenv("COOKIE_DOMAIN"); domain != "" {
+		clear.Domain = domain
+	}
+	http.SetCookie(w, clear)
+	w.WriteHeader(http.StatusOK)
 }

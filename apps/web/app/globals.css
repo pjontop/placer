@@ -1,0 +1,20 @@
+@import "../../../packages/ui/src/styles/globals.css";
+/* project specific css*/
+:root {
+  --font-sans: var(--font-openrunde, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial);
+}
+
+html, body, #__next {
+  height: 100%;
+}
+
+.min-h-svh {
+  min-height: 100svh;
+}
+
+.container {
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}

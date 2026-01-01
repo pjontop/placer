@@ -5,26 +5,28 @@ import "./globals.css";
 const OpenRunde = localFont({
   src: [
     {
-      path: './OpenRunde-Regular.woff2',
+      path: '../public/fonts/OpenRunde-Regular.woff2',
       weight: '400',
       style: 'normal',
     },
     {
-      path: './OpenRunde-Medium.woff2',
-      weight: '400',
+      path: '../public/fonts/OpenRunde-Medium.woff2',
+      weight: '500',
       style: 'normal',
     },
     {
-      path: './OpenRunde-Bold.woff2',
-      weight: '700',
+      path: '../public/fonts/OpenRunde-Semibold.woff2',
+      weight: '600',
       style: 'normal',
     },
     {
-      path: './OpenRunde-Semibold.woff2',
+      path: '../public/fonts/OpenRunde-Bold.woff2',
       weight: '700',
       style: 'normal',
     },
   ],
+  variable: '--font-openrunde',
+  display: 'swap',
 })
 
 export const metadata: Metadata = {
