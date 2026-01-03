@@ -11,7 +11,7 @@ import (
 type User struct {
 	ID           uuid.UUID
 	Email        string
-	Username     string
+	Name         string
 	PasswordHash string
 	CreatedAt    time.Time
 	LastLogin    *time.Time
@@ -28,19 +28,19 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 }
 
 // CreateUser adds a new user to the database
-func (r *UserRepository) CreateUser(email, username, passwordHash string) (*User, error) {
+func (r *UserRepository) CreateUser(email, name, passwordHash string) (*User, error) {
 	user := &User{
 		ID:           uuid.New(),
 		Email:        email,
-		Username:     username,
+		Name:         name,
 		PasswordHash: passwordHash,
 		CreatedAt:    time.Now(),
 	}
 	query := `
-        INSERT INTO users (id, email, username, password_hash, created_at)
+        INSERT INTO users (id, email, name, password_hash, created_at)
         VALUES ($1, $2, $3, $4, $5)
     `
-	_, err := r.db.Exec(query, user.ID, user.Email, user.Username, user.PasswordHash, user.CreatedAt)
+	_, err := r.db.Exec(query, user.ID, user.Email, user.Name, user.PasswordHash, user.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -49,13 +49,13 @@ func (r *UserRepository) CreateUser(email, username, passwordHash string) (*User
 
 // GetUserByEmail retrieves a user by their email address
 func (r *UserRepository) GetUserByEmail(email string) (*User, error) {
-	query := `SELECT id, email, username, password_hash, created_at, last_login FROM users WHERE email = $1`
+	query := `SELECT id, email, name, password_hash, created_at, last_login FROM users WHERE email = $1`
 	var user User
 	var lastLogin sql.NullTime
 	err := r.db.QueryRow(query, email).Scan(
 		&user.ID,
 		&user.Email,
-		&user.Username,
+		&user.Name,
 		&user.PasswordHash,
 		&user.CreatedAt,
 		&lastLogin,
@@ -71,13 +71,13 @@ func (r *UserRepository) GetUserByEmail(email string) (*User, error) {
 
 // GetUserByID retrieves a user by their ID
 func (r *UserRepository) GetUserByID(id uuid.UUID) (*User, error) {
-	query := `SELECT id, email, username, password_hash, created_at, last_login FROM users WHERE id = $1`
+	query := `SELECT id, email, name, password_hash, created_at, last_login FROM users WHERE id = $1`
 	var user User
 	var lastLogin sql.NullTime
 	err := r.db.QueryRow(query, id).Scan(
 		&user.ID,
 		&user.Email,
-		&user.Username,
+		&user.Name,
 		&user.PasswordHash,
 		&user.CreatedAt,
 		&lastLogin,

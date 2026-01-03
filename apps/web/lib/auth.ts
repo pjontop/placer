@@ -22,16 +22,36 @@ function parseJwt(token: string) {
 export type User = {
   id: string
   email?: string
-  username?: string
+  name?: string
 }
+
+export type AuthResult<T> = 
+  | { success: true; data: T }
+  | { success: false; error: string }
 
 let _accessToken: string | null = null
 
 export function getAccessToken() {
   return _accessToken
 }
+// SIGNUPPP!
+export async function signUp(email: string, name: string, password: string): Promise<AuthResult<any>> {
+  const base = process.env.NEXT_PUBLIC_BACKEND_URL || ''
+  const res = await fetch(base + '/api/auth/register', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, name, password }),
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    return { success: false, error: text || 'Registration failed' }
+  }
+  const data = await res.json()
+  return { success: true, data }
+}
 
-export async function signIn(email: string, password: string) {
+export async function signIn(email: string, password: string): Promise<AuthResult<User>> {
   const base = process.env.NEXT_PUBLIC_BACKEND_URL || ''
   const res = await fetch(base + '/api/auth/login', {
     method: 'POST',
@@ -41,13 +61,17 @@ export async function signIn(email: string, password: string) {
   })
   if (!res.ok) {
     const text = await res.text()
-    throw new Error(text || 'Login failed')
+    return { success: false, error: text || 'Login failed' }
   }
   const data = await res.json()
   const token = data.token as string
   _accessToken = token
   setAccessToken(token)
-  return parseJwt(token)
+  const claims = parseJwt(token)
+  if (!claims) {
+    return { success: false, error: 'Invalid token received' }
+  }
+  return { success: true, data: { id: claims.sub, email: claims.email, name: claims.name } }
 }
 
 export async function refresh() {

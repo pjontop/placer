@@ -35,7 +35,7 @@ func NewAuthService(userRepo *models.UserRepository, refreshTokenRepo *models.Re
 }
 
 // Register creates a new user with the provided credentials
-func (s *AuthService) Register(email, username, password string) (*models.User, error) {
+func (s *AuthService) Register(email, name, password string) (*models.User, error) {
 	// Check if user already exists
 	_, err := s.userRepo.GetUserByEmail(email)
 	if err == nil {
@@ -51,7 +51,7 @@ func (s *AuthService) Register(email, username, password string) (*models.User, 
 		return nil, err
 	}
 	// Create the user
-	user, err := s.userRepo.CreateUser(email, username, hashedPassword)
+	user, err := s.userRepo.CreateUser(email, name, hashedPassword)
 	if err != nil {
 		return nil, err
 	}
@@ -83,11 +83,11 @@ func (s *AuthService) generateAccessToken(user *models.User) (string, error) {
 	expirationTime := time.Now().Add(s.accessTokenTTL)
 	// Create the JWT claims
 	claims := jwt.MapClaims{
-		"sub":      user.ID.String(),      // subject (user ID)
-		"username": user.Username,         // custom claim
-		"email":    user.Email,            // custom claim
-		"exp":      expirationTime.Unix(), // expiration time
-		"iat":      time.Now().Unix(),     // issued at time
+		"sub":   user.ID.String(),
+		"name":  user.Name,
+		"email": user.Email,
+		"exp":   expirationTime.Unix(),
+		"iat":   time.Now().Unix(),
 	}
 	// Create the token with claims
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

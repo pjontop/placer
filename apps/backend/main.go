@@ -32,48 +32,60 @@ func loadEnv() {
 }
 
 func main() {
+	log.Println("starting backend")
+
 	// Load environment variables
 	loadEnv()
+	log.Println("vars loaded")
 
 	// Connect to the database
+	log.Println("connecting to db")
 	database, err := db.Connect(os.Getenv("DATABASE_URL"))
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		log.Fatalf("failed db connection with: %v", err)
 	}
+	log.Println("db connected")
 
 	r := mux.NewRouter()
 
-	// Register CORS middleware using configured frontend origin
 	frontendURL := os.Getenv("FRONTEND_URL")
+	log.Printf("configuring cors for: %s", frontendURL)
 	r.Use(middleware.CORSMiddleware(frontendURL))
 
-	// Create repositories
+	log.Println("creating repo's")
 	userRepo := models.NewUserRepository(database)
 	refreshTokenRepo := models.NewRefreshTokenRepository(database)
 
-	// Create services
+	log.Println("starting services")
 	authService := auth.NewAuthService(userRepo, refreshTokenRepo, os.Getenv("JWT_SECRET"), 15*time.Minute)
 
-	// Create handlers
+	log.Println("starting handlers")
 	authHandler := handlers.NewAuthHandler(authService)
 	userHandler := handlers.NewUserHandler(userRepo)
 
-	// Public routes
-	r.HandleFunc("/api/auth/register", authHandler.Register).Methods("POST")
-	r.HandleFunc("/api/auth/login", authHandler.Login).Methods("POST")
-	r.HandleFunc("/api/auth/refresh", authHandler.RefreshToken).Methods("POST")
-	r.HandleFunc("/api/auth/logout", authHandler.Logout).Methods("POST")
+	log.Println("configuring public routes")
+	r.HandleFunc("/api/auth/register", authHandler.Register).Methods("POST", "OPTIONS")
+	log.Println("  - POST /api/auth/register")
+	r.HandleFunc("/api/auth/login", authHandler.Login).Methods("POST", "OPTIONS")
+	log.Println("  - POST /api/auth/login")
+	r.HandleFunc("/api/auth/refresh", authHandler.RefreshToken).Methods("POST", "OPTIONS")
+	log.Println("  - POST /api/auth/refresh")
+	r.HandleFunc("/api/auth/logout", authHandler.Logout).Methods("POST", "OPTIONS")
+	log.Println("  - POST /api/auth/logout")
 
-	// Protected routes
+	log.Println("configuring private routes")
 	protected := r.PathPrefix("/api").Subrouter()
 	protected.Use(middleware.AuthMiddleware(authService))
 
 	protected.HandleFunc("/profile", userHandler.Profile).Methods("GET")
+	log.Println("  - GET /api/profile")
 
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
-	log.Printf("Server starting on port %s", port)
+	log.Println("")
+	log.Printf("server ready and on http://localhost:%s", port)
+	log.Println("")
 	log.Fatal(http.ListenAndServe(":"+port, r))
 }
